@@ -1,0 +1,20 @@
+[package]
+authors     = ["Xavier Lau <xavier@inv.cafe>"]
+description = "nested-a"
+edition     = "2021"
+homepage    = "https://subalfred.hack.ink"
+license     = "GPL-3.0"
+name        = "nested-a"
+readme      = "README.md"
+repository  = "https://github.com/hack-ink/subalfred"
+version     = "0.0.0"
+
+[dependencies]
+nested-b = { path = "../b", default-features = false }
+nested-d = { path = "../d", default-features = true }
+
+[features]
+default = ["std"]
+std = [
+	"nested-d/std",
+]

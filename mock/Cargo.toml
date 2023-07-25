@@ -1,0 +1,68 @@
+[package]
+authors     = ["Xavier Lau <xavier@inv.cafe>"]
+description = "mock-runtime"
+edition     = "2021"
+homepage    = "https://subalfred.hack.ink"
+license     = "GPL-3.0"
+name        = "mock-runtime"
+readme      = "README.md"
+repository  = "https://github.com/hack-ink/subalfred"
+version     = "0.0.0"
+
+[dependencies]
+# Test general
+general-a = { default-features = false, path = "general/a" }
+# Test alias
+b = { package = "general-b", default-features = false, path = "general/b" }
+# Test `default-features` toggled
+general-c = { default-features = true, path = "general/c" }
+# Test no default features
+general-d = { path = "general/d" }
+# Test development dependencies
+general-e = { path = "general/e" }
+# Test missing `pallet-a/std`
+pallet-a = { default-features = false, path = "pallet/a" }
+# Test missing `pallet-a/runtime-benchmarks`
+pallet-b = { default-features = false, path = "pallet/b" }
+# Test missing `pallet-a/try-runtime`
+pallet-c = { default-features = false, path = "pallet/c" }
+# Test nested depedencies.
+primitive-a = { default-features = false, path = "primitive/a" }
+
+[dev-dependencies]
+general-e = { path = "general/e" }
+
+[features]
+default = ["std"]
+std = [
+	"b/std",
+	"general-a/std",
+	"general-c/std",
+	# "pallet-a/std",
+	"pallet-b/std",
+	"pallet-c/std",
+	"primitive-a/std",
+]
+
+runtime-benchmarks = [
+	"pallet-a/runtime-benchmarks",
+	# "pallet-b/runtime-benchmarks",
+	"pallet-c/runtime-benchmarks",
+]
+
+try-runtime = [
+	"pallet-a/try-runtime",
+	"pallet-b/try-runtime",
+	# "pallet-c/try-runtime",
+]
+
+[workspace]
+resolver = "2"
+
+exclude = []
+members = [
+	"general/*",
+	"nested/*",
+	"pallet/*",
+	"primitive/*",
+]
