@@ -4,12 +4,23 @@ use std::{borrow::Cow, path::PathBuf};
 use cargo_metadata::{Metadata, Node, Package, PackageId, Resolve};
 
 pub trait GetById<'a> {
-	type Id;
-	type Item;
+	type Id: ?Sized;
+	type Item: ?Sized;
 
 	fn get_by_id<'b>(self, id: &'b Self::Id) -> Option<&'a Self::Item>
 	where
 		'a: 'b;
+}
+impl<'a> GetById<'a> for &[(&'a str, &'a str)] {
+	type Id = str;
+	type Item = str;
+
+	fn get_by_id<'b>(self, id: &'b Self::Id) -> Option<&'a Self::Item>
+	where
+		'a: 'b,
+	{
+		self.iter().find(|(k, _)| *k == id).map(|(_, v)| *v)
+	}
 }
 impl<'a> GetById<'a> for &'a Metadata {
 	type Id = PackageId;

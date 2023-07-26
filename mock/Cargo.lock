@@ -34,6 +34,7 @@ dependencies = [
  "pallet-a",
  "pallet-b",
  "pallet-c",
+ "pallet-d",
  "primitive-a",
 ]
 
@@ -70,6 +71,10 @@ version = "0.0.0"
 
 [[package]]
 name = "pallet-c"
+version = "0.0.0"
+
+[[package]]
+name = "pallet-d"
 version = "0.0.0"
 
 [[package]]

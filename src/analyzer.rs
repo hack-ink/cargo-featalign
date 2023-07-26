@@ -15,19 +15,21 @@ use cargo_metadata::{
 };
 use once_cell::sync::{Lazy, OnceCell};
 use serde::Serialize;
-// subalfred
-use crate::util::GetById;
+// cargo-featalign
+use crate::{cli::Cli, util, util::GetById};
 
 #[allow(clippy::type_complexity)]
 pub static PROBLEMS: Lazy<Arc<Mutex<HashMap<PackageId, Vec<ProblemCrate>>>>> =
 	Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
 pub fn append_problems(id: PackageId, mut problems: Vec<ProblemCrate>) {
-	PROBLEMS
-		.lock()
-		.unwrap()
-		.entry(id)
-		.and_modify(|pcs| pcs.append(&mut problems))
-		.or_insert(problems);
+	if !problems.is_empty() {
+		PROBLEMS
+			.lock()
+			.unwrap()
+			.entry(id)
+			.and_modify(|pcs| pcs.append(&mut problems))
+			.or_insert(problems);
+	}
 }
 
 static WORKSPACE_ONLY: OnceCell<bool> = OnceCell::new();
@@ -36,22 +38,32 @@ static THREAD: OnceCell<u16> = OnceCell::new();
 static THREAD_ACTIVE: Lazy<AtomicU16> = Lazy::new(|| AtomicU16::new(1));
 
 #[derive(Debug, Clone)]
-pub struct Processor {
+pub struct Analyzer {
 	features: Arc<Vec<String>>,
 	// TODO?: replace with `HashMap` packages
 	metadata: Arc<Metadata>,
 	// Remove?
 	resolve: Arc<Resolve>,
 }
-impl Processor {
-	pub fn analyze(
+impl Analyzer {
+	pub fn from_cli(cli: Cli) -> Self {
+		Self::new(
+			&util::manifest_path_of(&cli.manifest_path),
+			cli.features,
+			cli.workspace_only,
+			cli.default_std,
+			cli.thread,
+		)
+	}
+
+	fn new(
 		manifest_path: &PathBuf,
 		features: Vec<String>,
 		workspace_only: bool,
 		default_std: bool,
 		thread_count: u16,
 	) -> Self {
-		// These variables are initialized only once before processing,
+		// These variables are initialized only once before analyzing,
 		// so they must be `Some` in the following context.
 		WORKSPACE_ONLY.set(workspace_only).unwrap();
 		DEFAULT_STD.set(default_std).unwrap();
@@ -71,7 +83,7 @@ impl Processor {
 		}
 	}
 
-	pub fn process(self, depth: i16) {
+	pub fn analyze(self, depth: i16) {
 		let r = self.resolve.root.as_ref().expect(
 			"the `[package]` specified in the `Cargo.toml` cannot be found\n\
 			it appears to be a pure workspace which is not supported",
@@ -79,10 +91,10 @@ impl Processor {
 		let n = self.resolve.nodes.get_by_id(r).unwrap().to_owned();
 		let p = self.metadata.get_by_id(&n.id).unwrap().to_owned();
 
-		self.process_package(n, p, depth, String::new());
+		self.analyze_package(n, p, depth, String::new());
 	}
 
-	fn process_package(
+	fn analyze_package(
 		self,
 		node: Node,
 		package: Package,
@@ -95,21 +107,11 @@ impl Processor {
 
 		dependency_path.push_str(&format!("/{}", package.name.clone()));
 
-		let rs = package
-			.dependencies
-			.iter()
-			.filter_map(|d| d.rename.as_ref().map(|rn| (d.name.as_str(), rn.as_str())))
-			.collect();
-
 		if *DEFAULT_STD.get().unwrap() {
-			self.check_default_features(&node, &package, &dependency_path);
+			self.analyze_default_features(&node, &package, &dependency_path);
 		}
 
-		for (f, required_fs) in &package.features {
-			if self.features.contains(f) {
-				self.check_features(&node, &dependency_path, f, required_fs, &rs);
-			}
-		}
+		self.analyze_features(&node, &package, &dependency_path);
 
 		if in_depth(depth) {
 			let mut ts = Vec::new();
@@ -127,12 +129,12 @@ impl Processor {
 				// TODO: optimize, take this out of the loop
 				if THREAD_ACTIVE.load(Ordering::SeqCst) < *THREAD.get().unwrap() - 1 {
 					ts.push(thread::spawn(move || {
-						psr.process_package(n, p, depth - 1, dependency_path)
+						psr.analyze_package(n, p, depth - 1, dependency_path)
 					}));
 
 					THREAD_ACTIVE.fetch_add(1, Ordering::SeqCst);
 				} else {
-					psr.process_package(n, p, depth - 1, dependency_path);
+					psr.analyze_package(n, p, depth - 1, dependency_path);
 				}
 			}
 
@@ -146,7 +148,7 @@ impl Processor {
 		}
 	}
 
-	fn check_default_features(&self, node: &Node, package: &Package, dependency_path: &str) {
+	fn analyze_default_features(&self, node: &Node, package: &Package, dependency_path: &str) {
 		let mut problem_cs = Vec::new();
 
 		// The items we require are separated between two vectors: `node.deps` and
@@ -177,14 +179,13 @@ impl Processor {
 		append_problems(node.id.clone(), problem_cs);
 	}
 
-	fn check_features(
-		&self,
-		node: &Node,
-		dependency_path: &str,
-		feature: &str,
-		required_features: &[String],
-		renames: &HashMap<&str, &str>,
-	) {
+	fn analyze_features(&self, node: &Node, package: &Package, dependency_path: &str) {
+		let rs = package
+			.dependencies
+			.iter()
+			.filter_map(|d| d.rename.as_ref().map(|rn| (d.name.as_str(), rn.as_str())))
+			.collect::<Vec<_>>();
+
 		let mut problem_cs = Vec::new();
 
 		for d in &node.deps {
@@ -195,37 +196,44 @@ impl Processor {
 			let p_id = &d.pkg;
 			let p = self.metadata.get_by_id(p_id).unwrap();
 			let p_name = p.name.as_str();
-			let p_rename = renames.get(p_name).copied().unwrap_or(p_name);
+			let p_rename = rs.get_by_id(p_name).unwrap_or(p_name);
 			let n = self.resolve.get_by_id(p_id).unwrap();
+			let mut missing_fs = Vec::new();
 
-			// If the dependency has the feature specified by the user for processing.
-			if n.features.iter().any(|f| f == feature) {
-				let mut err = true;
+			for (f, required_fs) in
+				package.features.iter().filter(|(f, _)| self.features.contains(f))
+			{
+				// If the dependency has the feature specified by the user for analyzing.
+				if n.features.contains(f) {
+					let mut problematic = true;
 
-				// `assert!("general-a/std".contains("general-a"));`
-				for f in required_features {
-					// TODO: handle the full name here
-					// e.g. this could be `general-a/std` or `general-a?/std`
-					if f.contains(p_rename) {
-						err = false;
+					// `assert!("general-a/std".contains("general-a"));`
+					for f in required_fs {
+						// TODO: handle the full name here
+						// e.g. this could be `general-a/std` or `general-a?/std`
+						if f.contains(p_rename) {
+							problematic = false;
 
-						break;
+							break;
+						}
+					}
+
+					if problematic {
+						missing_fs.push(f.to_owned());
 					}
 				}
+			}
 
-				if err {
-					problem_cs.push(ProblemCrate {
-						id: p_id.to_owned(),
-						dependency_path: dependency_path.to_owned(),
-						problem: Problem::MissingFeature(feature.into()),
-					});
-				}
+			if !missing_fs.is_empty() {
+				problem_cs.push(ProblemCrate {
+					id: p_id.to_owned(),
+					dependency_path: dependency_path.to_owned(),
+					problem: Problem::MissingFeatures(missing_fs),
+				});
 			}
 		}
 
-		if !problem_cs.is_empty() {
-			append_problems(node.id.clone(), problem_cs);
-		}
+		append_problems(node.id.clone(), problem_cs);
 	}
 
 	fn is_workspace_member(&self, id: &PackageId) -> bool {
@@ -244,7 +252,7 @@ pub struct ProblemCrate {
 #[serde(rename_all = "kebab-case")]
 pub enum Problem {
 	DefaultFeaturesEnabled,
-	MissingFeature(String),
+	MissingFeatures(Vec<String>),
 }
 
 // Ignore `[dev-dependencies]`.

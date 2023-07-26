@@ -2,30 +2,32 @@
 authors     = ["Xavier Lau <xavier@inv.cafe>"]
 description = "mock-runtime"
 edition     = "2021"
-homepage    = "https://subalfred.hack.ink"
+homepage    = "https://hack.ink/cargo-featalign"
 license     = "GPL-3.0"
 name        = "mock-runtime"
 readme      = "README.md"
-repository  = "https://github.com/hack-ink/subalfred"
+repository  = "https://github.com/hack-ink/cargo-featalign"
 version     = "0.0.0"
 
 [dependencies]
-# Test general
+# Test general.
 general-a = { default-features = false, path = "general/a" }
-# Test alias
+# Test alias.
 b = { package = "general-b", default-features = false, path = "general/b" }
-# Test `default-features` toggled
+# Test `default-features` toggled.
 general-c = { default-features = true, path = "general/c" }
-# Test no default features
+# Test no default features.
 general-d = { path = "general/d" }
-# Test development dependencies
+# Test development dependencies.
 general-e = { path = "general/e" }
-# Test missing `pallet-a/std`
+# Test missing `pallet-a/std`.
 pallet-a = { default-features = false, path = "pallet/a" }
-# Test missing `pallet-a/runtime-benchmarks`
+# Test missing `pallet-a/runtime-benchmarks`.
 pallet-b = { default-features = false, path = "pallet/b" }
-# Test missing `pallet-a/try-runtime`
+# Test missing `pallet-a/try-runtime`.
 pallet-c = { default-features = false, path = "pallet/c" }
+# Test missing multiple features.
+pallet-d = { default-features = false, path = "pallet/d" }
 # Test nested depedencies.
 primitive-a = { default-features = false, path = "primitive/a" }
 
@@ -41,6 +43,7 @@ std = [
 	# "pallet-a/std",
 	"pallet-b/std",
 	"pallet-c/std",
+	# "pallet-d/std",
 	"primitive-a/std",
 ]
 
@@ -48,12 +51,14 @@ runtime-benchmarks = [
 	"pallet-a/runtime-benchmarks",
 	# "pallet-b/runtime-benchmarks",
 	"pallet-c/runtime-benchmarks",
+	# "pallet-d/runtime-benchmarks",
 ]
 
 try-runtime = [
 	"pallet-a/try-runtime",
 	"pallet-b/try-runtime",
 	# "pallet-c/try-runtime",
+	# "pallet-d/try-runtime",
 ]
 
 [workspace]

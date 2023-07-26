@@ -1,10 +1,10 @@
 [package]
 authors     = ["Xavier Lau <xavier@inv.cafe>"]
-description = "pallet-a"
+description = "pallet-d"
 edition     = "2021"
 homepage    = "https://hack.ink/cargo-featalign"
 license     = "GPL-3.0"
-name        = "pallet-a"
+name        = "pallet-d"
 readme      = "README.md"
 repository  = "https://github.com/hack-ink/cargo-featalign"
 version     = "0.0.0"

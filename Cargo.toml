@@ -3,12 +3,12 @@ authors     = ["Xavier Lau <xavier@inv.cafe>"]
 build       = "build.rs"
 description = "Cargo features alignment tool."
 edition     = "2021"
-homepage    = "https://cargo-featalign.hack.ink"
+homepage    = "https://hack.ink/cargo-featalign"
 license     = "GPL-3.0"
 name        = "cargo-featalign"
 readme      = "README.md"
 repository  = "https://github.com/hack-ink/cargo-featalign"
-version     = "0.1.0"
+version     = "0.2.0"
 
 [profile.ci-dev]
 incremental = false
