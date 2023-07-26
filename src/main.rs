@@ -8,6 +8,8 @@ use cli::{Cli, Parser};
 mod analyzer;
 use analyzer::{Analyzer, PROBLEMS};
 
+mod resolver;
+
 mod util;
 
 fn main() -> prelude::Result<()> {
@@ -19,6 +21,8 @@ fn main() -> prelude::Result<()> {
 	Analyzer::from_cli(cli).analyze(depth);
 
 	println!("{}", serde_json::to_string(&*PROBLEMS.lock().unwrap()).unwrap());
+
+	resolver::resolve()?;
 
 	Ok(())
 }

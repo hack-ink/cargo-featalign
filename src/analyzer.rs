@@ -73,7 +73,12 @@ impl Analyzer {
 			.manifest_path(manifest_path)
 			.features(CargoOpt::AllFeatures)
 			.exec()
-			.unwrap();
+			.unwrap_or_else(|_| {
+				panic!(
+					"failed to execute the `cargo metadata` command for the directory `{}`.",
+					manifest_path.display()
+				)
+			});
 		let resolve = mem::take(&mut metadata.resolve).unwrap();
 
 		Self {
@@ -170,6 +175,7 @@ impl Analyzer {
 			}) {
 				problem_cs.push(ProblemCrate {
 					id: p.id.clone(),
+					alias: String::new(),
 					dependency_path: dependency_path.to_owned(),
 					problem: Problem::DefaultFeaturesEnabled,
 				});
@@ -196,7 +202,7 @@ impl Analyzer {
 			let p_id = &d.pkg;
 			let p = self.metadata.get_by_id(p_id).unwrap();
 			let p_name = p.name.as_str();
-			let p_rename = rs.get_by_id(p_name).unwrap_or(p_name);
+			let p_alias = rs.get_by_id(p_name).unwrap_or(p_name);
 			let n = self.resolve.get_by_id(p_id).unwrap();
 			let mut missing_fs = Vec::new();
 
@@ -211,7 +217,7 @@ impl Analyzer {
 					for f in required_fs {
 						// TODO: handle the full name here
 						// e.g. this could be `general-a/std` or `general-a?/std`
-						if f.contains(p_rename) {
+						if f.contains(p_alias) {
 							problematic = false;
 
 							break;
@@ -227,6 +233,7 @@ impl Analyzer {
 			if !missing_fs.is_empty() {
 				problem_cs.push(ProblemCrate {
 					id: p_id.to_owned(),
+					alias: p_alias.to_owned(),
 					dependency_path: dependency_path.to_owned(),
 					problem: Problem::MissingFeatures(missing_fs),
 				});
@@ -244,9 +251,10 @@ impl Analyzer {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ProblemCrate {
-	id: PackageId,
-	dependency_path: String,
-	problem: Problem,
+	pub id: PackageId,
+	pub alias: String,
+	pub dependency_path: String,
+	pub problem: Problem,
 }
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
