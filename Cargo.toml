@@ -25,8 +25,10 @@ clap           = { version = "4.3", features = ["derive"] }
 color-eyre     = { version = "0.6" }
 num_cpus       = { version = "1.16" }
 once_cell      = { version = "1.18" }
+regex          = { version = "1.9" }
 serde          = { version = "1.0", features = ["derive"] }
 serde_json     = { version = "1.0" }
+toml_edit      = { version = "0.19" }
 
 [build-dependencies]
 # crates.io
