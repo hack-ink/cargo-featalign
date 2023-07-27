@@ -1,0 +1,19 @@
+[package]
+authors     = ["Xavier Lau <xavier@inv.cafe>"]
+description = "nested-b"
+edition     = "2021"
+homepage    = "https://hack.ink/cargo-featalign"
+license     = "GPL-3.0"
+name        = "nested-b"
+readme      = "README.md"
+repository  = "https://github.com/hack-ink/cargo-featalign"
+version     = "0.0.0"
+
+[dependencies]
+nested-c = { path = "../c", default-features = false }
+
+[features]
+default = ["std"]
+std     = [
+	"nested-c/std",
+]

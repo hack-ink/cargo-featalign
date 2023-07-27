@@ -26,11 +26,18 @@ pub struct Cli {
 	/// Depth of the dependency tree to process.
 	///
 	/// Use `-1` to process the entire tree.
+	///
+	/// !! Running with this flag under a large project, even with 128 threads configured, is
+	/// incredibly challenging.
 	#[arg(long, value_name = "NUM", default_value_t = 0, allow_hyphen_values = true)]
 	pub depth: i16,
 
 	#[command(flatten)]
 	pub resolver_initiator: ResolverInitiator,
+
+	/// Verbose output.
+	#[arg(long)]
+	pub verbose: bool,
 }
 
 #[derive(Debug, Parser)]
@@ -40,6 +47,14 @@ pub struct SharedInitiator {
 	/// The default value is based on the number of logical cores.
 	#[arg(long, value_name = "NUM", default_value_t = num_cpus::get() as _, allow_hyphen_values = true)]
 	pub thread: u16,
+	/// Running mode.
+	///
+	/// Check: Prints the analysis result.
+	/// DryRun: Prints the resolved result without modifying the `Cargo.toml` file.
+	/// DryRun2: creates a `*.cargo-featalign.swap` file.
+	/// Overwrite: Overwrites the original `Cargo.toml` file.
+	#[arg(long, value_enum, verbatim_doc_comment, default_value_t = Mode::Overwrite)]
+	pub mode: Mode,
 }
 
 #[derive(Debug, Parser)]
@@ -58,6 +73,8 @@ pub struct AnalyzerInitiator {
 	/// Determines whether to check default features.
 	///
 	/// This option is useful when working in a no-std environment.
+	/// This feature checks if you have set `default-features = false` while also having a `std =
+	/// ["x/std"]` part to control it separately.
 	#[arg(long)]
 	pub default_std: bool,
 }
@@ -70,13 +87,6 @@ pub struct ResolverInitiator {
 	/// The number of spaces used for indentation.
 	#[arg(long, value_name = "SIZE", default_value_t = 4)]
 	pub indent_size: usize,
-	/// Resolving mode.
-	///
-	/// Check: outputs the result to stdout.
-	/// DryRun: creates a `*.cargo-featalign.swap` file.
-	/// Overwrite: overwrites the original `Cargo.toml` file.
-	#[arg(long, value_enum, default_value_t = Mode::Overwrite)]
-	pub mode: Mode,
 }
 #[derive(Clone, Debug, ValueEnum)]
 pub enum IndentSymbol {
@@ -87,5 +97,6 @@ pub enum IndentSymbol {
 pub enum Mode {
 	Check,
 	DryRun,
+	DryRun2,
 	Overwrite,
 }

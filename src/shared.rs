@@ -6,7 +6,9 @@ use std::{
 // crates.io
 use once_cell::sync::{Lazy, OnceCell};
 // cargo-featalign
-use crate::cli::SharedInitiator;
+use crate::cli::{Mode, SharedInitiator};
+
+pub static MODE: OnceCell<Mode> = OnceCell::new();
 
 static THREAD: OnceCell<u16> = OnceCell::new();
 static THREAD_ACTIVE: Lazy<AtomicU16> = Lazy::new(|| AtomicU16::new(1));
@@ -37,6 +39,7 @@ pub struct Shared;
 impl Shared {
 	pub fn initialize(initiator: SharedInitiator) -> Self {
 		THREAD.set(initiator.thread).unwrap();
+		MODE.set(initiator.mode).unwrap();
 
 		Self
 	}

@@ -2,6 +2,7 @@
 use std::{borrow::Cow, path::PathBuf};
 // crates.io
 use cargo_metadata::{Metadata, Node, Package, PackageId, Resolve};
+use imara_diff::{intern::InternedInput, Algorithm, UnifiedDiffBuilder};
 
 pub trait GetById<'a> {
 	type Id: ?Sized;
@@ -77,4 +78,10 @@ pub fn manifest_path_of(path: &PathBuf) -> Cow<PathBuf> {
 
 		Cow::Owned(p)
 	}
+}
+
+pub fn diff(a: &str, b: &str) -> String {
+	let input = InternedInput::new(a, b);
+
+	imara_diff::diff(Algorithm::Histogram, &input, UnifiedDiffBuilder::new(&input))
 }

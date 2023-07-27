@@ -14,12 +14,12 @@ use crate::{
 	analyzer::{Problem, ProblemCrate, PROBLEMS},
 	cli::{IndentSymbol, Mode, ResolverInitiator},
 	prelude::*,
+	shared::MODE,
 };
 
 static PATH_REGEX: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r".+? \d.\d.\d \(path\+file://(/.+?)\)").unwrap());
 static INDENTATION: OnceCell<String> = OnceCell::new();
-static MODE: OnceCell<Mode> = OnceCell::new();
 
 #[derive(Clone, Debug)]
 pub struct Resolver;
@@ -31,7 +31,6 @@ impl Resolver {
 		};
 
 		INDENTATION.set(indentation).unwrap();
-		MODE.set(initiator.mode).unwrap();
 
 		Self
 	}
@@ -58,7 +57,8 @@ impl Resolver {
 
 	fn resolve_crate(self, id: PackageId, problem_crates: Vec<ProblemCrate>) -> Result<()> {
 		let p = manifest_path_of(&id.repr);
-		let mut d = fs::read_to_string(&p)?.parse::<Document>()?;
+		let s = fs::read_to_string(&p)?;
+		let mut d = s.parse::<Document>()?;
 
 		for pc in problem_crates {
 			match pc.problem {
@@ -68,22 +68,30 @@ impl Resolver {
 						let fs = d["features"].as_table_mut().unwrap();
 						let fs = fs[&f].as_array_mut().unwrap();
 
-						fs.push_formatted(
-							Value::from(format!("{}/{f}", pc.alias))
-								.decorated(INDENTATION.get().unwrap(), ""),
-						);
+						fs.push_formatted(Value::from(format!("{}/{f}", pc.alias)).decorated(
+							INDENTATION.get().unwrap(),
+							if fs.len() == 0 { ",\n" } else { "" },
+						));
 					},
 			}
 		}
 
-		let p_tmp = tmp_path_of(&p);
-		let f_tmp = File::create(&p_tmp)?;
-		let mut w = BufWriter::new(f_tmp);
+		match MODE.get().unwrap() {
+			Mode::Check => (),
+			Mode::DryRun => {
+				println!("{id}\n{}", util::diff(&s, &d.to_string()));
+			},
+			m @ Mode::DryRun2 | m @ Mode::Overwrite => {
+				let p_tmp = tmp_path_of(&p);
+				let f_tmp = File::create(&p_tmp)?;
+				let mut w = BufWriter::new(f_tmp);
 
-		w.write_all(d.to_string().as_bytes())?;
+				w.write_all(d.to_string().as_bytes())?;
 
-		if *MODE.get().unwrap() == Mode::Overwrite {
-			fs::rename(p_tmp, p)?;
+				if *m == Mode::Overwrite {
+					fs::rename(p_tmp, p)?;
+				}
+			},
 		}
 
 		Ok(())

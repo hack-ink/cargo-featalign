@@ -12,11 +12,7 @@ use cargo_metadata::{
 use once_cell::sync::{Lazy, OnceCell};
 use serde::Serialize;
 // cargo-featalign
-use crate::{
-	cli::AnalyzerInitiator,
-	prelude::*,
-	util::{self, GetById},
-};
+use crate::{cli::AnalyzerInitiator, prelude::*, util::GetById};
 
 #[allow(clippy::type_complexity)]
 pub static PROBLEMS: Lazy<Arc<Mutex<HashMap<PackageId, Vec<ProblemCrate>>>>> =
