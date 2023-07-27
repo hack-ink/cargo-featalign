@@ -14,7 +14,7 @@
 
 ### Introduction
 The original version of this project can be found at [`subalfred check features`](https://github.com/hack-ink/subalfred).
-After further investigation, I discovered that this tool is not only suitable for *Cargo* projects but also offers more powerful features than ever before.
+Upon further investigation, I have found that this tool is not only compatible with *Substrate* projects but also works for general *Cargo* projects, offering even more powerful features than before.
 Now, `cargo-featalign` stands out with its enhanced functionality.
 
 The `cargo-featalign` tool offers the following features:
