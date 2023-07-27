@@ -1,30 +1,34 @@
 // std
 use std::{
-	collections::HashMap,
 	mem,
-	path::PathBuf,
 	sync::{Arc, Mutex},
 };
 // crates.io
 use cargo_metadata::{
 	CargoOpt, DependencyKind, Metadata, MetadataCommand, Node, NodeDep, Package, PackageId, Resolve,
 };
+use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use serde::Serialize;
 // cargo-featalign
 use crate::{cli::AnalyzerInitiator, prelude::*, util::GetById};
 
 #[allow(clippy::type_complexity)]
-pub static PROBLEMS: Lazy<Arc<Mutex<HashMap<PackageId, Vec<ProblemCrate>>>>> =
-	Lazy::new(|| Arc::new(Mutex::new(HashMap::new())));
-pub fn append_problems(id: PackageId, mut problems: Vec<ProblemCrate>) {
+pub static PROBLEMS: Lazy<Arc<Mutex<FxHashMap<PackageId, Vec<ProblemCrate>>>>> =
+	Lazy::new(|| Arc::new(Mutex::new(FxHashMap::default())));
+pub fn append_problems(id: PackageId, problems: Vec<ProblemCrate>) {
 	if !problems.is_empty() {
-		PROBLEMS
-			.lock()
-			.unwrap()
-			.entry(id)
-			.and_modify(|pcs| pcs.append(&mut problems))
-			.or_insert(problems);
+		let mut ps = PROBLEMS.lock().unwrap();
+
+		if let Some(pcs) = ps.get_mut(&id) {
+			problems.into_iter().for_each(|pc| {
+				if !pcs.contains(&pc) {
+					pcs.push(pc);
+				}
+			});
+		} else {
+			ps.insert(id, problems);
+		}
 	}
 }
 
@@ -34,32 +38,20 @@ static DEFAULT_STD: OnceCell<bool> = OnceCell::new();
 #[derive(Debug, Clone)]
 pub struct Analyzer {
 	features: Arc<Vec<String>>,
-	// TODO?: replace with `HashMap` packages
+	// TODO?: replace with `FxHashMap` packages
 	metadata: Arc<Metadata>,
 	// Remove?
 	resolve: Arc<Resolve>,
 }
 impl Analyzer {
 	pub fn initialize(initiator: AnalyzerInitiator) -> Self {
-		Self::new(
-			&util::manifest_path_of(&initiator.manifest_path),
-			initiator.features,
-			initiator.workspace_only,
-			initiator.default_std,
-		)
-	}
+		let manifest_path = util::manifest_path_of(&initiator.manifest_path);
 
-	fn new(
-		manifest_path: &PathBuf,
-		features: Vec<String>,
-		workspace_only: bool,
-		default_std: bool,
-	) -> Self {
-		WORKSPACE_ONLY.set(workspace_only).unwrap();
-		DEFAULT_STD.set(default_std).unwrap();
+		WORKSPACE_ONLY.set(initiator.workspace_only).unwrap();
+		DEFAULT_STD.set(initiator.default_std).unwrap();
 
 		let mut metadata = MetadataCommand::new()
-			.manifest_path(manifest_path)
+			.manifest_path(&*manifest_path)
 			.features(CargoOpt::AllFeatures)
 			.exec()
 			.unwrap_or_else(|_| {
@@ -71,7 +63,7 @@ impl Analyzer {
 		let resolve = mem::take(&mut metadata.resolve).unwrap();
 
 		Self {
-			features: Arc::new(features),
+			features: Arc::new(initiator.features),
 			metadata: Arc::new(metadata),
 			resolve: Arc::new(resolve),
 		}
@@ -225,6 +217,12 @@ pub struct ProblemCrate {
 	pub alias: String,
 	pub dependency_path: String,
 	pub problem: Problem,
+}
+// TODO?: this would affect the dependency path
+impl PartialEq for ProblemCrate {
+	fn eq(&self, other: &Self) -> bool {
+		self.id == other.id
+	}
 }
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]

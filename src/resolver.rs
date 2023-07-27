@@ -6,6 +6,7 @@ use std::{
 };
 // crates.io
 use cargo_metadata::PackageId;
+use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
 use toml_edit::{Document, Value};
@@ -43,11 +44,11 @@ impl Resolver {
 		let ps = mem::take(&mut *PROBLEMS.lock().unwrap());
 		let mut ts = Vec::new();
 
-		for (c, pcs) in ps {
+		ps.into_iter().for_each(|(c, pcs)| {
 			let r = self.clone();
 
 			shared::activate_thread(&mut ts, move || r.resolve_crate(c, pcs));
-		}
+		});
 		for r in shared::deactivate_threads(ts) {
 			r?;
 		}
@@ -59,20 +60,37 @@ impl Resolver {
 		let p = manifest_path_of(&id.repr);
 		let s = fs::read_to_string(&p)?;
 		let mut d = s.parse::<Document>()?;
+		// Introduce initial state to fix:
+		// ```diff
+		// -runtime-benchmarks = []
+		// +runtime-benchmarks = [
+		// + "frame-support/runtime-benchmarks",
+		// +,
+		// + "frame-system/runtime-benchmarks",
+		// + "pallet-evm/runtime-benchmarks"]
+		// ```
+		let mut fs_initial_state = FxHashMap::default();
 
-		for pc in problem_crates {
-			match pc.problem {
+		for (i, pc) in problem_crates.iter().enumerate() {
+			match &pc.problem {
 				Problem::DefaultFeaturesEnabled => continue,
-				Problem::MissingFeatures(fs) =>
-					for f in fs {
-						let fs = d["features"].as_table_mut().unwrap();
-						let fs = fs[&f].as_array_mut().unwrap();
+				Problem::MissingFeatures(fs) => fs.iter().for_each(|f| {
+					let fs = d["features"].as_table_mut().unwrap();
+					let fs = fs[f].as_array_mut().unwrap();
 
-						fs.push_formatted(Value::from(format!("{}/{f}", pc.alias)).decorated(
-							INDENTATION.get().unwrap(),
-							if fs.len() == 0 { ",\n" } else { "" },
-						));
-					},
+					if !fs_initial_state.contains_key(f) {
+						fs_initial_state.insert(f.to_owned(), fs.is_empty());
+					}
+
+					fs.push_formatted(Value::from(format!("{}/{f}", pc.alias)).decorated(
+						INDENTATION.get().unwrap(),
+						if *fs_initial_state.get(f).unwrap() && i == problem_crates.len() - 1 {
+							",\n"
+						} else {
+							""
+						},
+					));
+				}),
 			}
 		}
 
