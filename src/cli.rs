@@ -2,6 +2,8 @@ pub use clap::Parser;
 
 // std
 use std::path::PathBuf;
+// crates.io
+use clap::ValueEnum;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -16,6 +18,32 @@ use std::path::PathBuf;
 	rename_all = "kebab",
 )]
 pub struct Cli {
+	#[command(flatten)]
+	pub shared_initiator: SharedInitiator,
+
+	#[command(flatten)]
+	pub analyzer_initiator: AnalyzerInitiator,
+	/// Depth of the dependency tree to process.
+	///
+	/// Use `-1` to process the entire tree.
+	#[arg(long, value_name = "NUM", default_value_t = 0, allow_hyphen_values = true)]
+	pub depth: i16,
+
+	#[command(flatten)]
+	pub resolver_initiator: ResolverInitiator,
+}
+
+#[derive(Debug, Parser)]
+pub struct SharedInitiator {
+	/// Number of threads to use.
+	///
+	/// The default value is based on the number of logical cores.
+	#[arg(long, value_name = "NUM", default_value_t = num_cpus::get() as _, allow_hyphen_values = true)]
+	pub thread: u16,
+}
+
+#[derive(Debug, Parser)]
+pub struct AnalyzerInitiator {
 	/// Root `Cargo.toml`'s path.
 	///
 	/// If `Cargo.toml` is not provided, it will be searched for under the specified path.
@@ -32,14 +60,32 @@ pub struct Cli {
 	/// This option is useful when working in a no-std environment.
 	#[arg(long)]
 	pub default_std: bool,
-	/// Depth of the dependency tree to process.
+}
+
+#[derive(Debug, Parser)]
+pub struct ResolverInitiator {
+	/// Use the given symbol for indentation.
+	#[arg(long, value_enum, default_value_t = IndentSymbol::Tab)]
+	pub indent_symbol: IndentSymbol,
+	/// The number of spaces used for indentation.
+	#[arg(long, value_name = "SIZE", default_value_t = 4)]
+	pub indent_size: usize,
+	/// Resolving mode.
 	///
-	/// Use `-1` to process the entire tree.
-	#[arg(long, value_name = "NUM", default_value_t = 0, allow_hyphen_values = true)]
-	pub depth: i16,
-	/// Number of threads to use.
-	///
-	/// The default value is based on the number of logical cores.
-	#[arg(long, value_name = "NUM", default_value_t = num_cpus::get() as _, allow_hyphen_values = true)]
-	pub thread: u16,
+	/// Check: outputs the result to stdout.
+	/// DryRun: creates a `*.cargo-featalign.swap` file.
+	/// Overwrite: overwrites the original `Cargo.toml` file.
+	#[arg(long, value_enum, default_value_t = Mode::Overwrite)]
+	pub mode: Mode,
+}
+#[derive(Clone, Debug, ValueEnum)]
+pub enum IndentSymbol {
+	Tab,
+	Whitespace,
+}
+#[derive(Clone, Debug, PartialEq, ValueEnum)]
+pub enum Mode {
+	Check,
+	DryRun,
+	Overwrite,
 }

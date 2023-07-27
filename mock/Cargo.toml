@@ -28,7 +28,7 @@ pallet-b = { default-features = false, path = "pallet/b" }
 pallet-c = { default-features = false, path = "pallet/c" }
 # Test missing multiple features.
 pallet-d = { default-features = false, path = "pallet/d" }
-# Test nested depedencies.
+# Test nested dependencies.
 primitive-a = { default-features = false, path = "primitive/a" }
 
 [dev-dependencies]

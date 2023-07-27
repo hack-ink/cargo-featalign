@@ -3,11 +3,7 @@ use std::{
 	collections::HashMap,
 	mem,
 	path::PathBuf,
-	sync::{
-		atomic::{AtomicU16, Ordering},
-		Arc, Mutex,
-	},
-	thread,
+	sync::{Arc, Mutex},
 };
 // crates.io
 use cargo_metadata::{
@@ -16,7 +12,11 @@ use cargo_metadata::{
 use once_cell::sync::{Lazy, OnceCell};
 use serde::Serialize;
 // cargo-featalign
-use crate::{cli::Cli, util, util::GetById};
+use crate::{
+	cli::AnalyzerInitiator,
+	prelude::*,
+	util::{self, GetById},
+};
 
 #[allow(clippy::type_complexity)]
 pub static PROBLEMS: Lazy<Arc<Mutex<HashMap<PackageId, Vec<ProblemCrate>>>>> =
@@ -34,8 +34,6 @@ pub fn append_problems(id: PackageId, mut problems: Vec<ProblemCrate>) {
 
 static WORKSPACE_ONLY: OnceCell<bool> = OnceCell::new();
 static DEFAULT_STD: OnceCell<bool> = OnceCell::new();
-static THREAD: OnceCell<u16> = OnceCell::new();
-static THREAD_ACTIVE: Lazy<AtomicU16> = Lazy::new(|| AtomicU16::new(1));
 
 #[derive(Debug, Clone)]
 pub struct Analyzer {
@@ -46,13 +44,12 @@ pub struct Analyzer {
 	resolve: Arc<Resolve>,
 }
 impl Analyzer {
-	pub fn from_cli(cli: Cli) -> Self {
+	pub fn initialize(initiator: AnalyzerInitiator) -> Self {
 		Self::new(
-			&util::manifest_path_of(&cli.manifest_path),
-			cli.features,
-			cli.workspace_only,
-			cli.default_std,
-			cli.thread,
+			&util::manifest_path_of(&initiator.manifest_path),
+			initiator.features,
+			initiator.workspace_only,
+			initiator.default_std,
 		)
 	}
 
@@ -61,13 +58,9 @@ impl Analyzer {
 		features: Vec<String>,
 		workspace_only: bool,
 		default_std: bool,
-		thread_count: u16,
 	) -> Self {
-		// These variables are initialized only once before analyzing,
-		// so they must be `Some` in the following context.
 		WORKSPACE_ONLY.set(workspace_only).unwrap();
 		DEFAULT_STD.set(default_std).unwrap();
-		THREAD.set(thread_count).unwrap();
 
 		let mut metadata = MetadataCommand::new()
 			.manifest_path(manifest_path)
@@ -96,16 +89,10 @@ impl Analyzer {
 		let n = self.resolve.nodes.get_by_id(r).unwrap().to_owned();
 		let p = self.metadata.get_by_id(&n.id).unwrap().to_owned();
 
-		self.analyze_package(n, p, depth, String::new());
+		self.analyze_crate(n, p, depth, String::new());
 	}
 
-	fn analyze_package(
-		self,
-		node: Node,
-		package: Package,
-		depth: i16,
-		mut dependency_path: String,
-	) {
+	fn analyze_crate(self, node: Node, package: Package, depth: i16, mut dependency_path: String) {
 		if *WORKSPACE_ONLY.get().unwrap() && !self.is_workspace_member(&package.id) {
 			return;
 		}
@@ -131,25 +118,12 @@ impl Analyzer {
 				let dependency_path = dependency_path.clone();
 				let psr = self.clone();
 
-				// TODO: optimize, take this out of the loop
-				if THREAD_ACTIVE.load(Ordering::SeqCst) < *THREAD.get().unwrap() - 1 {
-					ts.push(thread::spawn(move || {
-						psr.analyze_package(n, p, depth - 1, dependency_path)
-					}));
-
-					THREAD_ACTIVE.fetch_add(1, Ordering::SeqCst);
-				} else {
-					psr.analyze_package(n, p, depth - 1, dependency_path);
-				}
+				shared::activate_thread(&mut ts, move || {
+					psr.analyze_crate(n, p, depth - 1, dependency_path)
+				});
 			}
 
-			let ts_count = ts.len() as u16;
-
-			for t in ts {
-				t.join().unwrap();
-			}
-
-			THREAD_ACTIVE.fetch_sub(ts_count, Ordering::SeqCst);
+			shared::deactivate_threads(ts);
 		}
 	}
 
