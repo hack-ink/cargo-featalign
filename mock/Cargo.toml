@@ -30,6 +30,10 @@ pallet-c = { default-features = false, path = "pallet/c" }
 pallet-d = { default-features = false, path = "pallet/d" }
 # Test nested dependencies.
 primitive-a = { default-features = false, path = "primitive/a" }
+# Test empty feature format.
+primitive-b = { path = "primitive/b" }
+primitive-c = { path = "primitive/c" }
+primitive-d = { path = "primitive/d" }
 
 [dev-dependencies]
 general-e = { path = "general/e" }
@@ -60,6 +64,8 @@ try-runtime = [
 	# "pallet-c/try-runtime",
 	# "pallet-d/try-runtime",
 ]
+
+empty = []
 
 [workspace]
 resolver = "2"

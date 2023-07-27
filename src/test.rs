@@ -13,7 +13,11 @@ fn cargo_featalign_should_work() {
 	Shared::initialize(SharedInitiator { thread: 32, mode: Mode::DryRun2 });
 	Analyzer::initialize(AnalyzerInitiator {
 		manifest_path: "mock".into(),
-		features: vec!["std".into(), "runtime-benchmarks".into(), "try-runtime".into()],
+		features: ["std", "runtime-benchmarks", "try-runtime", "empty"]
+			.iter()
+			.copied()
+			.map(Into::into)
+			.collect(),
 		workspace_only: true,
 		default_std: true,
 	})

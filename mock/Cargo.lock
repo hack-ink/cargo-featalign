@@ -36,6 +36,9 @@ dependencies = [
  "pallet-c",
  "pallet-d",
  "primitive-a",
+ "primitive-b",
+ "primitive-c",
+ "primitive-d",
 ]
 
 [[package]]
@@ -83,3 +86,15 @@ version = "0.0.0"
 dependencies = [
  "nested-a",
 ]
+
+[[package]]
+name = "primitive-b"
+version = "0.0.0"
+
+[[package]]
+name = "primitive-c"
+version = "0.0.0"
+
+[[package]]
+name = "primitive-d"
+version = "0.0.0"
