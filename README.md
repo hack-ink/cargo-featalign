@@ -24,8 +24,8 @@ The `cargo-featalign` tool offers the following features:
 - Automatically aligning/fixing missing features
 
 ### Installation
-- **From GitHub: [`github.com/hack-ink/cargo-featalign/releases/latest`](https://github.com/hack-ink/**cargo-featalign/releases/latest)**
-- **From Cargo: `cargo install cargo-featalign`**
+- From GitHub: [`github.com/hack-ink/cargo-featalign/releases/latest`](https://github.com/hack-ink/**cargo-featalign/releases/latest)
+- From Cargo: `cargo install cargo-featalign`
 
 ### Usage
 ```sh
