@@ -16,6 +16,6 @@ nested-d = { path = "../d", default-features = true }
 [features]
 default = ["std"]
 std = [
-	"nested-d/std",
 	"nested-b/std",
+	"nested-d/std",
 ]

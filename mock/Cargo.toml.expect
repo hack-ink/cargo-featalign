@@ -48,16 +48,16 @@ std = [
 	"pallet-b/std",
 	"pallet-c/std",
 	# "pallet-d/std",
-	"primitive-a/std",
 	"pallet-a/std",
 	"pallet-d/std",
+	"primitive-a/std",
 ]
 
 runtime-benchmarks = [
 	"pallet-a/runtime-benchmarks",
 	# "pallet-b/runtime-benchmarks",
-	"pallet-c/runtime-benchmarks",
 	"pallet-b/runtime-benchmarks",
+	"pallet-c/runtime-benchmarks",
 	"pallet-d/runtime-benchmarks",
 	# "pallet-d/runtime-benchmarks",
 ]

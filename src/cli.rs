@@ -42,6 +42,9 @@ pub struct Cli {
 
 #[derive(Debug, Parser)]
 pub struct SharedInitiator {
+	/// Features to process.
+	#[arg(long, required = true, value_name = "[NAME]", value_delimiter = ',')]
+	pub features: Vec<String>,
 	/// Number of threads to use.
 	///
 	/// The default value is based on the number of logical cores.
@@ -55,6 +58,12 @@ pub struct SharedInitiator {
 	/// Overwrite: Overwrites the original `Cargo.toml` file.
 	#[arg(long, value_enum, verbatim_doc_comment, default_value_t = Mode::Overwrite)]
 	pub mode: Mode,
+	/// Use the given symbol for indentation.
+	#[arg(long, value_enum, default_value_t = IndentSymbol::Tab)]
+	pub indent_symbol: IndentSymbol,
+	/// The number of spaces used for indentation.
+	#[arg(long, value_name = "SIZE", default_value_t = 4)]
+	pub indent_size: usize,
 }
 
 #[derive(Debug, Parser)]
@@ -64,9 +73,6 @@ pub struct AnalyzerInitiator {
 	/// If `Cargo.toml` is not provided, it will be searched for under the specified path.
 	#[arg(value_name = "PATH", default_value = "./Cargo.toml")]
 	pub manifest_path: PathBuf,
-	/// Features to process.
-	#[arg(long, required = true, value_name = "[NAME]", value_delimiter = ',')]
-	pub features: Vec<String>,
 	/// Determines whether to process only workspace members.
 	#[arg(long)]
 	pub workspace_only: bool,
@@ -81,12 +87,9 @@ pub struct AnalyzerInitiator {
 
 #[derive(Debug, Parser)]
 pub struct ResolverInitiator {
-	/// Use the given symbol for indentation.
-	#[arg(long, value_enum, default_value_t = IndentSymbol::Tab)]
-	pub indent_symbol: IndentSymbol,
-	/// The number of spaces used for indentation.
-	#[arg(long, value_name = "SIZE", default_value_t = 4)]
-	pub indent_size: usize,
+	/// Wether to sort the required features during alignment.
+	#[arg(long)]
+	pub sort: bool,
 }
 #[derive(Clone, Debug, ValueEnum)]
 pub enum IndentSymbol {

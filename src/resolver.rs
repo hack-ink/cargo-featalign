@@ -9,29 +9,26 @@ use cargo_metadata::PackageId;
 use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
-use toml_edit::{Document, Value};
+use toml_edit::{visit_mut::VisitMut, Document, Value};
 // cargo-featalign
 use crate::{
 	analyzer::{Problem, ProblemCrate, PROBLEMS},
-	cli::{IndentSymbol, Mode, ResolverInitiator},
+	cli::{Mode, ResolverInitiator},
 	prelude::*,
-	shared::MODE,
+	shared::{FEATURES, INDENTATION, MODE},
+	sorter::SortVisitor,
 };
 
 static PATH_REGEX: Lazy<Regex> =
 	Lazy::new(|| Regex::new(r".+? \d.\d.\d \(path\+file://(/.+?)\)").unwrap());
-static INDENTATION: OnceCell<String> = OnceCell::new();
+
+static SORT: OnceCell<bool> = OnceCell::new();
 
 #[derive(Clone, Debug)]
 pub struct Resolver;
 impl Resolver {
 	pub fn initialize(initiator: ResolverInitiator) -> Self {
-		let indentation = match initiator.indent_symbol {
-			IndentSymbol::Tab => "\n\t".into(),
-			IndentSymbol::Whitespace => format!("\n{}", " ".repeat(initiator.indent_size)),
-		};
-
-		INDENTATION.set(indentation).unwrap();
+		SORT.set(initiator.sort).unwrap();
 
 		Self
 	}
@@ -94,12 +91,14 @@ impl Resolver {
 			}
 		}
 
+		if *SORT.get().unwrap() {
+			SortVisitor(FEATURES.get().unwrap().to_owned()).visit_document_mut(&mut d);
+		}
+
 		match MODE.get().unwrap() {
 			Mode::Check => (),
-			Mode::DryRun => {
-				println!("{id}\n{}", util::diff(&s, &d.to_string()));
-			},
-			m @ Mode::DryRun2 | m @ Mode::Overwrite => {
+			Mode::DryRun => println!("{id}\n{}", util::diff(&s, &d.to_string())),
+			m => {
 				let p_tmp = tmp_path_of(&p);
 				let f_tmp = File::create(&p_tmp)?;
 				let mut w = BufWriter::new(f_tmp);
