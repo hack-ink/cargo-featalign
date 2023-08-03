@@ -6,9 +6,11 @@ use std::{
 // crates.io
 use once_cell::sync::{Lazy, OnceCell};
 // cargo-featalign
-use crate::cli::{Mode, SharedInitiator};
+use crate::cli::{IndentSymbol, Mode, SharedInitiator};
 
+pub static FEATURES: OnceCell<Vec<String>> = OnceCell::new();
 pub static MODE: OnceCell<Mode> = OnceCell::new();
+pub static INDENTATION: OnceCell<String> = OnceCell::new();
 
 static THREAD: OnceCell<u16> = OnceCell::new();
 static THREAD_ACTIVE: Lazy<AtomicU16> = Lazy::new(|| AtomicU16::new(1));
@@ -38,8 +40,16 @@ pub fn deactivate_threads<T>(threads: Vec<JoinHandle<T>>) -> Vec<T> {
 pub struct Shared;
 impl Shared {
 	pub fn initialize(initiator: SharedInitiator) -> Self {
+		FEATURES.set(initiator.features).unwrap();
 		THREAD.set(initiator.thread).unwrap();
 		MODE.set(initiator.mode).unwrap();
+
+		let indentation = match initiator.indent_symbol {
+			IndentSymbol::Tab => "\n\t".into(),
+			IndentSymbol::Whitespace => format!("\n{}", " ".repeat(initiator.indent_size)),
+		};
+
+		INDENTATION.set(indentation).unwrap();
 
 		Self
 	}

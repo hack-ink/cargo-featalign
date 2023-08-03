@@ -11,7 +11,7 @@ use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use serde::Serialize;
 // cargo-featalign
-use crate::{cli::AnalyzerInitiator, prelude::*, util::GetById};
+use crate::{cli::AnalyzerInitiator, prelude::*, shared::FEATURES, util::GetById};
 
 #[allow(clippy::type_complexity)]
 pub static PROBLEMS: Lazy<Arc<Mutex<FxHashMap<PackageId, Vec<ProblemCrate>>>>> =
@@ -37,7 +37,6 @@ static DEFAULT_STD: OnceCell<bool> = OnceCell::new();
 
 #[derive(Debug, Clone)]
 pub struct Analyzer {
-	features: Arc<Vec<String>>,
 	// TODO?: replace with `FxHashMap` packages
 	metadata: Arc<Metadata>,
 	// Remove?
@@ -62,11 +61,7 @@ impl Analyzer {
 			});
 		let resolve = mem::take(&mut metadata.resolve).unwrap();
 
-		Self {
-			features: Arc::new(initiator.features),
-			metadata: Arc::new(metadata),
-			resolve: Arc::new(resolve),
-		}
+		Self { metadata: Arc::new(metadata), resolve: Arc::new(resolve) }
 	}
 
 	pub fn analyze(self, depth: i16) {
@@ -166,11 +161,10 @@ impl Analyzer {
 			let p_name = p.name.as_str();
 			let p_alias = rs.get_by_id(p_name).unwrap_or(p_name);
 			let n = self.resolve.get_by_id(p_id).unwrap();
+			let fs = FEATURES.get().unwrap();
 			let mut missing_fs = Vec::new();
 
-			for (f, required_fs) in
-				package.features.iter().filter(|(f, _)| self.features.contains(f))
-			{
+			for (f, required_fs) in package.features.iter().filter(|(f, _)| fs.contains(f)) {
 				// If the dependency has the feature specified by the user for analyzing.
 				if n.features.contains(f) {
 					let mut problematic = true;

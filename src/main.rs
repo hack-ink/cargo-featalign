@@ -10,6 +10,8 @@ use cli::{Cli, Mode, Parser};
 mod analyzer;
 use analyzer::{Analyzer, PROBLEMS};
 
+mod sorter;
+
 mod resolver;
 use resolver::Resolver;
 
