@@ -22,6 +22,7 @@ The `cargo-featalign` tool offers the following features:
 - Printing the dependency path
 - Performing a dry run before overwriting
 - Automatically aligning/fixing missing features
+- Sorting alphabetically while aligning
 
 ### Installation
 - From GitHub: [`github.com/hack-ink/cargo-featalign/releases/latest`](https://github.com/hack-ink/**cargo-featalign/releases/latest)
@@ -34,7 +35,7 @@ cargo featalign --help
 ```
 Cargo features alignment tool.
 
-Usage: featalign [OPTIONS] --features <[NAME]> [PATH]
+Usage: cargo-featalign [OPTIONS] --features <[NAME]> [PATH]
 
 Arguments:
   [PATH]
@@ -45,6 +46,9 @@ Arguments:
           [default: ./Cargo.toml]
 
 Options:
+      --features <[NAME]>
+          Features to process
+
       --thread <NUM>
           Number of threads to use.
 
@@ -63,8 +67,16 @@ Options:
           [default: overwrite]
           [possible values: check, dry-run, dry-run2, overwrite]
 
-      --features <[NAME]>
-          Features to process
+      --indent-symbol <INDENT_SYMBOL>
+          Use the given symbol for indentation
+
+          [default: tab]
+          [possible values: tab, whitespace]
+
+      --indent-size <SIZE>
+          The number of spaces used for indentation
+
+          [default: 4]
 
       --workspace-only
           Determines whether to process only workspace members
@@ -79,20 +91,12 @@ Options:
 
           Use `-1` to process the entire tree.
 
-		  !! Running with this flag under a large project, even with 128 threads configured, is incredibly challenging.
+          !! Running with this flag under a large project, even with 128 threads configured, is incredibly challenging.
 
           [default: 0]
 
-      --indent-symbol <INDENT_SYMBOL>
-          Use the given symbol for indentation
-
-          [default: tab]
-          [possible values: tab, whitespace]
-
-      --indent-size <SIZE>
-          The number of spaces used for indentation
-
-          [default: 4]
+      --sort
+          Wether to sort the required features while aligning
 
       --verbose
           Verbose output
@@ -486,4 +490,66 @@ cargo featalign mock --features std,runtime-benchmarks,try-runtime --workspace-o
 ```
 ```sh
 diff mock/Cargo.toml mock/Cargo.toml.cargo-featalign.swap
+```
+
+#### Sorting
+```sh
+cargo featalign mock --features std,runtime-benchmarks,try-runtime --workspace-only --default-std --depth -1 --mode dry-run --sort
+```
+```diff
+@@ -16,5 +16,6 @@
+ [features]
+ default = ["std"]
+ std = [
++   "nested-b/std",
+    "nested-d/std",
+ ]
+
+nested-b 0.0.0 (path+file:///root/code/hack-ink/cargo-featalign/mock/nested/b)
+@@ -14,4 +14,6 @@
+
+ [features]
+ default = ["std"]
+-std     = []
++std     = [
++   "nested-c/std",
++]
+
+mock-runtime 0.0.0 (path+file:///root/code/hack-ink/cargo-featalign/mock)
+@@ -48,24 +48,34 @@
+    "pallet-b/std",
+    "pallet-c/std",
+    # "pallet-d/std",
++   "pallet-a/std",
++   "pallet-d/std",
+    "primitive-a/std",
+ ]
+
+ runtime-benchmarks = [
+    "pallet-a/runtime-benchmarks",
+    # "pallet-b/runtime-benchmarks",
++   "pallet-b/runtime-benchmarks",
+    "pallet-c/runtime-benchmarks",
++   "pallet-d/runtime-benchmarks",
+    # "pallet-d/runtime-benchmarks",
+ ]
+
+ try-runtime = [
+    "pallet-a/try-runtime",
+    "pallet-b/try-runtime",
++   "pallet-c/try-runtime",
++   "pallet-d/try-runtime",
+    # "pallet-c/try-runtime",
+    # "pallet-d/try-runtime",
+ ]
+
+-empty = []
++empty = [
++   "primitive-b/empty",
++   "primitive-c/empty",
++   "primitive-d/empty",
++]
+
+ [workspace]
+ resolver = "2"
 ```

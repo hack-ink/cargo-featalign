@@ -87,7 +87,7 @@ pub struct AnalyzerInitiator {
 
 #[derive(Debug, Parser)]
 pub struct ResolverInitiator {
-	/// Wether to sort the required features during alignment.
+	/// Wether to sort the required features while aligning.
 	#[arg(long)]
 	pub sort: bool,
 }
