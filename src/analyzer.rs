@@ -11,7 +11,7 @@ use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use serde::Serialize;
 // cargo-featalign
-use crate::{cli::AnalyzerInitiator, prelude::*, util::GetById, shared::FEATURES};
+use crate::{cli::AnalyzerInitiator, prelude::*, shared::FEATURES, util::GetById};
 
 #[allow(clippy::type_complexity)]
 pub static PROBLEMS: Lazy<Arc<Mutex<FxHashMap<PackageId, Vec<ProblemCrate>>>>> =

@@ -6,7 +6,7 @@ use std::{
 // crates.io
 use once_cell::sync::{Lazy, OnceCell};
 // cargo-featalign
-use crate::cli::{Mode, SharedInitiator, IndentSymbol};
+use crate::cli::{IndentSymbol, Mode, SharedInitiator};
 
 pub static FEATURES: OnceCell<Vec<String>> = OnceCell::new();
 pub static MODE: OnceCell<Mode> = OnceCell::new();
