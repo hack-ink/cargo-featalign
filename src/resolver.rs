@@ -19,8 +19,7 @@ use crate::{
 	sorter::SortVisitor,
 };
 
-static PATH_REGEX: Lazy<Regex> =
-	Lazy::new(|| Regex::new(r".+?\(path\+file://(/.+?)\)").unwrap());
+static PATH_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r".+?\(path\+file://(/.+?)\)").unwrap());
 
 static SORT: OnceCell<bool> = OnceCell::new();
 
