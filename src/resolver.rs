@@ -20,7 +20,7 @@ use crate::{
 };
 
 static PATH_REGEX: Lazy<Regex> =
-	Lazy::new(|| Regex::new(r".+? \d.\d.\d \(path\+file://(/.+?)\)").unwrap());
+	Lazy::new(|| Regex::new(r".+?\(path\+file://(/.+?)\)").unwrap());
 
 static SORT: OnceCell<bool> = OnceCell::new();
 
