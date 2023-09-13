@@ -19,7 +19,7 @@ impl VisitMut for SortVisitor {
 					.unwrap_or_default()
 			}
 
-			fn sort_sub(v: &mut Vec<Formatted<String>>, prefix: Option<RawString>) {
+			fn sort_sub(v: &mut [Formatted<String>], prefix: Option<RawString>) {
 				v.sort_by(|a, b| a.value().cmp(b.value()));
 
 				if let Some(p) = prefix {
