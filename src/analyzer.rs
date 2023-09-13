@@ -99,11 +99,15 @@ impl Analyzer {
 				let n = self.resolve.get_by_id(&d.pkg).unwrap().to_owned();
 				let p = self.metadata.get_by_id(&d.pkg).unwrap().to_owned();
 				let dependency_path = dependency_path.clone();
-				let psr = self.clone();
+				let analyzer = self.clone();
 
-				shared::activate_thread(&mut ts, move || {
-					psr.analyze_crate(n, p, depth - 1, dependency_path)
-				});
+				if depth > 8 {
+					analyzer.analyze_crate(n, p, depth - 1, dependency_path);
+				} else {
+					shared::activate_thread(&mut ts, move || {
+						analyzer.analyze_crate(n, p, depth - 1, dependency_path)
+					});
+				}
 			}
 
 			shared::deactivate_threads(ts);
