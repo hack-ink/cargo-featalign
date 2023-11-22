@@ -33,7 +33,9 @@ pub fn append_problems(id: PackageId, problems: Vec<ProblemCrate>) {
 }
 
 static WORKSPACE_ONLY: OnceCell<bool> = OnceCell::new();
+static IGNORE: OnceCell<Vec<String>> = OnceCell::new();
 static DEFAULT_STD: OnceCell<bool> = OnceCell::new();
+static NON_DEFAULT_STD: OnceCell<Vec<String>> = OnceCell::new();
 
 #[derive(Debug, Clone)]
 pub struct Analyzer {
@@ -47,7 +49,9 @@ impl Analyzer {
 		let manifest_path = util::manifest_path_of(&initiator.manifest_path);
 
 		WORKSPACE_ONLY.set(initiator.workspace_only).unwrap();
+		IGNORE.set(initiator.ignore).unwrap();
 		DEFAULT_STD.set(initiator.default_std).unwrap();
+		NON_DEFAULT_STD.set(initiator.non_default_std).unwrap();
 
 		let mut metadata = MetadataCommand::new()
 			.manifest_path(&*manifest_path)
@@ -76,15 +80,13 @@ impl Analyzer {
 	}
 
 	fn analyze_crate(self, node: Node, package: Package, depth: i16, mut dependency_path: String) {
-		if *WORKSPACE_ONLY.get().unwrap() && !self.is_workspace_member(&package.id) {
+		if *WORKSPACE_ONLY.get().unwrap() && !self.is_workspace_member(&package.id)
+			|| IGNORE.get().unwrap().contains(&package.name)
+		{
 			return;
 		}
 
 		dependency_path.push_str(&format!("/{}", package.name.clone()));
-
-		if *DEFAULT_STD.get().unwrap() {
-			self.analyze_default_features(&node, &package, &dependency_path);
-		}
 
 		self.analyze_features(&node, &package, &dependency_path);
 
@@ -92,7 +94,7 @@ impl Analyzer {
 			let mut ts = Vec::new();
 
 			for d in &node.deps {
-				if ignore(d) {
+				if is_dev(d) {
 					continue;
 				}
 
@@ -114,49 +116,24 @@ impl Analyzer {
 		}
 	}
 
-	fn analyze_default_features(&self, node: &Node, package: &Package, dependency_path: &str) {
-		let mut problem_cs = Vec::new();
-
-		// The items we require are separated between two vectors: `node.deps` and
-		// `package.dependencies`.
-		for d in &node.deps {
-			if ignore(d) {
-				continue;
-			}
-
-			let p = self.metadata.get_by_id(&d.pkg).unwrap();
-
-			if package.dependencies.iter().any(|d| {
-				d.name == p.name
-					&& d.uses_default_features
-					&& p.features
-						.get("default")
-						.map(|dfs| dfs.iter().any(|f| f == "std"))
-						.unwrap_or_default()
-			}) {
-				problem_cs.push(ProblemCrate {
-					id: p.id.clone(),
-					alias: String::new(),
-					dependency_path: dependency_path.to_owned(),
-					problem: Problem::DefaultFeaturesEnabled,
-				});
-			}
-		}
-
-		append_problems(node.id.clone(), problem_cs);
-	}
-
 	fn analyze_features(&self, node: &Node, package: &Package, dependency_path: &str) {
 		let rs = package
 			.dependencies
 			.iter()
 			.filter_map(|d| d.rename.as_ref().map(|rn| (d.name.as_str(), rn.as_str())))
 			.collect::<Vec<_>>();
-
+		let has_std_feat = package.features.get("std").is_some();
+		let non_optional_deps = if *DEFAULT_STD.get().unwrap() && has_std_feat {
+			package.dependencies.iter().filter(|d| !d.optional).collect::<Vec<_>>()
+		} else {
+			Vec::new()
+		};
+		let fs = FEATURES.get().unwrap();
+		let fs = package.features.iter().filter(|(f, _)| fs.contains(f)).collect::<Vec<_>>();
 		let mut problem_cs = Vec::new();
 
 		for d in &node.deps {
-			if ignore(d) {
+			if is_dev(d) {
 				continue;
 			}
 
@@ -165,28 +142,51 @@ impl Analyzer {
 			let p_name = p.name.as_str();
 			let p_alias = rs.get_by_id(p_name).unwrap_or(p_name);
 			let n = self.resolve.get_by_id(p_id).unwrap();
-			let fs = FEATURES.get().unwrap();
 			let mut missing_fs = Vec::new();
 
-			for (f, required_fs) in package.features.iter().filter(|(f, _)| fs.contains(f)) {
+			if !non_optional_deps.is_empty()
+				&& !is_non_default_std(&d.name)
+				// Package's dependencies have `std` feature enabled.
+				&& non_optional_deps.iter().any(|d| {
+					d.name == p.name
+						&& d.uses_default_features
+						&& p.features
+							.get("default")
+							.map(|dfs| dfs.iter().any(|f| f == "std"))
+							.unwrap_or_default()
+				}) {
+				problem_cs.push(ProblemCrate {
+					id: p_id.to_owned(),
+					alias: p_alias.to_owned(),
+					dependency_path: dependency_path.to_owned(),
+					problem: Problem::DefaultFeaturesEnabled,
+				});
+			}
+
+			'out: for (f, required_fs) in &fs {
 				// If the dependency has the feature specified by the user for analyzing.
 				if n.features.contains(f) {
-					let mut problematic = true;
+					if package.dependencies.iter().any(|d| {
+						d.name == p_name
+							&& d.uses_default_features && p
+							.features
+							.get("default")
+							.map(|dfs| dfs.iter().any(|f_| f_ == *f))
+							.unwrap_or_default()
+					}) {
+						continue;
+					}
 
 					// `assert!("general-a/std".contains("general-a"));`
-					for f in required_fs {
+					for f in *required_fs {
 						// TODO: handle the full name here
 						// e.g. this could be `general-a/std` or `general-a?/std`
 						if f.contains(p_alias) {
-							problematic = false;
-
-							break;
+							continue 'out;
 						}
 					}
 
-					if problematic {
-						missing_fs.push(f.to_owned());
-					}
+					missing_fs.push((*f).to_owned());
 				}
 			}
 
@@ -229,9 +229,13 @@ pub enum Problem {
 	MissingFeatures(Vec<String>),
 }
 
-// Ignore `[dev-dependencies]`.
-fn ignore(node_dep: &NodeDep) -> bool {
+// Check if the this package is under the `[dev-dependencies]`.
+fn is_dev(node_dep: &NodeDep) -> bool {
 	node_dep.dep_kinds.iter().any(|k| matches!(k.kind, DependencyKind::Development))
+}
+
+fn is_non_default_std(name: &str) -> bool {
+	NON_DEFAULT_STD.get().unwrap().iter().any(|n| n == name)
 }
 
 fn in_depth(depth: i16) -> bool {

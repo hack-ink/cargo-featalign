@@ -23,6 +23,10 @@ name = "general-e"
 version = "0.0.0"
 
 [[package]]
+name = "general-f"
+version = "0.0.0"
+
+[[package]]
 name = "mock-runtime"
 version = "0.0.0"
 dependencies = [
@@ -31,6 +35,8 @@ dependencies = [
  "general-c",
  "general-d",
  "general-e",
+ "general-f",
+ "optional-a",
  "pallet-a",
  "pallet-b",
  "pallet-c",
@@ -38,7 +44,6 @@ dependencies = [
  "primitive-a",
  "primitive-b",
  "primitive-c",
- "primitive-d",
 ]
 
 [[package]]
@@ -63,6 +68,13 @@ version = "0.0.0"
 [[package]]
 name = "nested-d"
 version = "0.0.0"
+
+[[package]]
+name = "optional-a"
+version = "0.0.0"
+dependencies = [
+ "primitive-a",
+]
 
 [[package]]
 name = "pallet-a"
@@ -93,8 +105,4 @@ version = "0.0.0"
 
 [[package]]
 name = "primitive-c"
-version = "0.0.0"
-
-[[package]]
-name = "primitive-d"
 version = "0.0.0"

@@ -76,6 +76,9 @@ pub struct AnalyzerInitiator {
 	/// Determines whether to process only workspace members.
 	#[arg(long)]
 	pub workspace_only: bool,
+	/// Disregard the analysis of the specified crates.
+	#[arg(long, value_delimiter = ',')]
+	pub ignore: Vec<String>,
 	/// Determines whether to check default features.
 	///
 	/// This option is useful when working in a no-std environment.
@@ -83,6 +86,11 @@ pub struct AnalyzerInitiator {
 	/// ["x/std"]` part to control it separately.
 	#[arg(long)]
 	pub default_std: bool,
+	// Specify the crates here that do not use the default to control their `std` feature. This
+	// will prevent the check from being applied to them, which is only useful when enabling the
+	// `default-std`.
+	#[arg(long, value_delimiter = ',')]
+	pub non_default_std: Vec<String>,
 }
 
 #[derive(Debug, Parser)]

@@ -26,9 +26,10 @@ fn cargo_featalign_should_work() {
 	});
 	Analyzer::initialize(AnalyzerInitiator {
 		manifest_path: "mock".into(),
-
 		workspace_only: true,
 		default_std: true,
+		ignore: Vec::new(),
+		non_default_std: Vec::new(),
 	})
 	.analyze(-1);
 	Resolver::initialize(ResolverInitiator { sort: true }).resolve().unwrap();

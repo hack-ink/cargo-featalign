@@ -18,8 +18,10 @@ b = { package = "general-b", default-features = false, path = "general/b" }
 general-c = { default-features = true, path = "general/c" }
 # Test no default features.
 general-d = { path = "general/d" }
-# Test development dependencies.
+# Test development dependency.
 general-e = { path = "general/e" }
+# Test optional dependency with default std.
+general-f = { path = "general/f", optional = true }
 # Test missing `pallet-a/std`.
 pallet-a = { default-features = false, path = "pallet/a" }
 # Test missing `pallet-a/runtime-benchmarks`.
@@ -32,8 +34,12 @@ pallet-d = { default-features = false, path = "pallet/d" }
 primitive-a = { default-features = false, path = "primitive/a" }
 # Test empty feature format.
 primitive-b = { path = "primitive/b" }
+# Test `std` isn't a part of default features.
 primitive-c = { path = "primitive/c" }
-primitive-d = { path = "primitive/d" }
+# Test `std` is enabled by default in an optional dependency.
+#
+# Cargo Featalign should not raise any complaints when the default `std` is enabled.
+optional-a = { path = "optional/a", optional = true }
 
 [dev-dependencies]
 general-e = { path = "general/e" }
@@ -67,6 +73,10 @@ try-runtime = [
 
 empty = []
 
+other = [
+	"general-f",
+]
+
 [workspace]
 resolver = "2"
 
@@ -74,6 +84,7 @@ exclude = []
 members = [
 	"general/*",
 	"nested/*",
+	"optional/*",
 	"pallet/*",
 	"primitive/*",
 ]

@@ -1,13 +1,14 @@
 [package]
 authors     = ["Xavier Lau <xavier@inv.cafe>"]
-description = "primitive-d"
+description = "general-f"
 edition     = "2021"
 homepage    = "https://hack.ink/cargo-featalign"
 license     = "GPL-3.0"
-name        = "primitive-d"
+name        = "general-f"
 readme      = "README.md"
 repository  = "https://github.com/hack-ink/cargo-featalign"
 version     = "0.0.0"
 
 [features]
-empty = []
+default = ["std"]
+std     = []
