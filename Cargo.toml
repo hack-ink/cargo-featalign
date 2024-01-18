@@ -35,4 +35,4 @@ toml_edit      = { version = "0.21" }
 
 [build-dependencies]
 # crates.io
-vergen = { version = "8.2", features = ["build", "cargo", "git", "gitcl"] }
+vergen = { version = "8.3", features = ["build", "cargo", "git", "gitcl"] }
