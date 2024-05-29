@@ -122,7 +122,7 @@ impl Analyzer {
 			.iter()
 			.filter_map(|d| d.rename.as_ref().map(|rn| (d.name.as_str(), rn.as_str())))
 			.collect::<Vec<_>>();
-		let has_std_feat = package.features.get("std").is_some();
+		let has_std_feat = package.features.contains_key("std");
 		let non_optional_deps = if *DEFAULT_STD.get().unwrap() && has_std_feat {
 			package.dependencies.iter().filter(|d| !d.optional).collect::<Vec<_>>()
 		} else {

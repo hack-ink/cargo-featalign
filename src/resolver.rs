@@ -9,7 +9,7 @@ use cargo_metadata::PackageId;
 use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
-use toml_edit::{visit_mut::VisitMut, Document, Value};
+use toml_edit::{visit_mut::VisitMut, DocumentMut, Value};
 // cargo-featalign
 use crate::{
 	analyzer::{Problem, ProblemCrate, PROBLEMS},
@@ -55,7 +55,7 @@ impl Resolver {
 	fn resolve_crate(self, id: PackageId, problem_crates: Vec<ProblemCrate>) -> Result<()> {
 		let p = manifest_path_of(&id.repr);
 		let s = fs::read_to_string(&p)?;
-		let mut d = s.parse::<Document>()?;
+		let mut d = s.parse::<DocumentMut>()?;
 		// Introduce initial state to fix:
 		// ```diff
 		// -runtime-benchmarks = []

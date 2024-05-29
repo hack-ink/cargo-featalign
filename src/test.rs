@@ -1,7 +1,7 @@
 // std
 use std::fs;
 // crates.io
-use toml_edit::{visit_mut::VisitMut, Document};
+use toml_edit::{visit_mut::VisitMut, DocumentMut};
 // cargo-featalign
 use crate::{
 	analyzer::Analyzer,
@@ -104,7 +104,7 @@ g = [
 empty = []
 "#;
 
-	let mut d = s.parse::<Document>().unwrap();
+	let mut d = s.parse::<DocumentMut>().unwrap();
 	let mut s = SortVisitor(["f", "g", "empty"].iter().map(|s| (*s).into()).collect());
 	s.visit_document_mut(&mut d);
 
