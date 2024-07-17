@@ -1,9 +1,10 @@
 name: Staging
-on:
-  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
+
+on:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -13,13 +14,9 @@ jobs:
       matrix:
         target:
           [
-            { name: x86_64-unknown-linux-gnu, os: ubuntu-latest },
             { name: aarch64-apple-darwin, os: macos-latest },
-            {
-              name: x86_64-pc-windows-msvc,
-              os: windows-latest,
-              extension: .exe,
-            },
+            { name: x86_64-unknown-linux-gnu, os: ubuntu-latest },
+            { name: x86_64-pc-windows-msvc, os: windows-latest },
           ]
     steps:
       - name: Fetch latest code
@@ -28,15 +25,26 @@ jobs:
         run: rustup target add ${{ matrix.target.name }}
       - name: Build
         run: cargo build --profile ci-release --locked --target ${{ matrix.target.name }}
-      - name: Compress
+      - name: Pack (macOS)
+        if: matrix.target.os == 'macos-latest'
         run: |
-          mv target/${{ matrix.target.name }}/ci-release/cargo-featalign${{ matrix.target.extension }} .
-          zstd --ultra -22 -o cargo-featalign-${{ matrix.target.name }}.zst cargo-featalign${{ matrix.target.extension }}
+          mv target/${{ matrix.target.name }}/ci-release/cargo-featalign .
+          zip cargo-featalign-${{ matrix.target.name }}.zip cargo-featalign
+      - name: Pack (Windows)
+        if: matrix.target.os == 'windows-latest'
+        run: |
+          mv target/${{ matrix.target.name }}/ci-release/cargo-featalign.exe .
+          Compress-Archive -Path cargo-featalign.exe -DestinationPath cargo-featalign-${{ matrix.target.name }}.zip
+      - name: Pack (Linux)
+        if: matrix.target.os == 'ubuntu-latest'
+        run: |
+          mv target/${{ matrix.target.name }}/ci-release/cargo-featalign .
+          tar -czvf cargo-featalign-${{ matrix.target.name }}.tar.gz cargo-featalign
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: cargo-featalign-${{ matrix.target.name }}
-          path: cargo-featalign-${{ matrix.target.name }}.zst
+          path: cargo-featalign-${{ matrix.target.name }}.*
           retention-days: 1
 
   staging:
@@ -60,7 +68,7 @@ jobs:
           mv ../MD5 .
           ls -al
       # - name: Publish
-      #   uses: softprops/action-gh-release@v1
+      #   uses: softprops/action-gh-release@v2
       #   with:
       #     discussion_category_name: Announcements
       #     generate_release_notes: true

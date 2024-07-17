@@ -168,11 +168,11 @@ impl Analyzer {
 				if n.features.contains(f) {
 					if package.dependencies.iter().any(|d| {
 						d.name == p_name
-							&& d.uses_default_features && p
-							.features
-							.get("default")
-							.map(|dfs| dfs.iter().any(|f_| f_ == *f))
-							.unwrap_or_default()
+							&& d.uses_default_features
+							&& p.features
+								.get("default")
+								.map(|dfs| dfs.iter().any(|f_| f_ == *f))
+								.unwrap_or_default()
 					}) {
 						continue;
 					}
