@@ -129,7 +129,7 @@ name = "cargo-featalign"
 version = "0.6.4"
 dependencies = [
  "anyhow",
- "cargo_metadata",
+ "cargo_metadata 0.19.0",
  "clap",
  "color-eyre",
  "fxhash",
@@ -157,6 +157,20 @@ name = "cargo_metadata"
 version = "0.18.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2d886547e41f740c616ae73108f6eb70afe6d940c7bc697cb30f13daec073037"
+dependencies = [
+ "camino",
+ "cargo-platform",
+ "semver",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "afc309ed89476c8957c50fb818f56fe894db857866c3e163335faa91dc34eb85"
 dependencies = [
  "camino",
  "cargo-platform",
@@ -799,7 +813,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "349ed9e45296a581f455bc18039878f409992999bc1d5da12a6800eb18c8752f"
 dependencies = [
  "anyhow",
- "cargo_metadata",
+ "cargo_metadata 0.18.1",
  "derive_builder",
  "regex",
  "rustversion",
