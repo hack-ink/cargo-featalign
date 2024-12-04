@@ -25,7 +25,7 @@ vergen-gitcl = { version = "1.0", features = ["cargo"] }
 [dependencies]
 # crates.io
 anyhow         = { version = "1.0" }
-cargo_metadata = { version = "0.18" }
+cargo_metadata = { version = "0.19" }
 clap           = { version = "4.5", features = ["derive"] }
 color-eyre     = { version = "0.6" }
 fxhash         = { version = "0.2" }
