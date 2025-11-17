@@ -1,8 +1,11 @@
 // std
-use std::{borrow::Cow, path::PathBuf};
+use std::{
+	borrow::Cow,
+	path::{Path, PathBuf},
+};
 // crates.io
 use cargo_metadata::{Metadata, Node, Package, PackageId, Resolve};
-use imara_diff::{intern::InternedInput, Algorithm, UnifiedDiffBuilder};
+use imara_diff::{Algorithm, UnifiedDiffBuilder, intern::InternedInput};
 
 pub trait GetById<'a> {
 	type Id: ?Sized;
@@ -68,7 +71,7 @@ impl<'a> GetById<'a> for &'a [Node] {
 	}
 }
 
-pub fn manifest_path_of(path: &PathBuf) -> Cow<PathBuf> {
+pub fn manifest_path_of(path: &PathBuf) -> Cow<'_, Path> {
 	if path.is_file() {
 		Cow::Borrowed(path)
 	} else {

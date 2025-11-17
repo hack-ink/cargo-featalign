@@ -1,0 +1,40 @@
+[tasks.clippy]
+workspace = false
+command = "cargo"
+args = [
+	"clippy",
+	"--workspace",
+	"--all-targets",
+	"--all-features",
+]
+
+[tasks.fmt]
+workspace = false
+command = "cargo"
+toolchain = "nightly"
+args = [
+	"fmt",
+	"--all",
+]
+
+[tasks.nextest]
+workspace = false
+command = "cargo"
+args = [
+	"nextest",
+	"run",
+	"--workspace",
+	"--all-targets",
+	"--all-features",
+]
+
+[tasks.udeps]
+workspace = false
+command = "cargo"
+toolchain = "nightly"
+args = [
+	"udeps",
+	"--workspace",
+	"--all-targets",
+	"--all-features",
+]

@@ -9,10 +9,10 @@ use cargo_metadata::PackageId;
 use fxhash::FxHashMap;
 use once_cell::sync::{Lazy, OnceCell};
 use regex::Regex;
-use toml_edit::{visit_mut::VisitMut, DocumentMut, Value};
+use toml_edit::{DocumentMut, Value, visit_mut::VisitMut};
 // cargo-featalign
 use crate::{
-	analyzer::{Problem, ProblemCrate, PROBLEMS},
+	analyzer::{PROBLEMS, Problem, ProblemCrate},
 	cli::{Mode, ResolverInitiator},
 	prelude::*,
 	shared::{FEATURES, INDENTATION, MODE},

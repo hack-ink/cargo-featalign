@@ -1,7 +1,7 @@
 // std
 use std::mem;
 // crates.io
-use toml_edit::{visit_mut::VisitMut, Formatted, RawString, Table, Value};
+use toml_edit::{Formatted, RawString, Table, Value, visit_mut::VisitMut};
 // cargo-featalign
 use crate::shared::INDENTATION;
 

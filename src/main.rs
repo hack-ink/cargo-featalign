@@ -16,7 +16,7 @@ mod resolver;
 use resolver::Resolver;
 
 mod shared;
-use shared::{Shared, MODE};
+use shared::{MODE, Shared};
 
 mod util;
 

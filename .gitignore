@@ -1,18 +1,36 @@
+# AI
+.codex
+.orchestrator
+.specify
+
+# Editor
+.vscode
+
+# Language Specifics
+
+## JavaScript/TypeScript
+node_modules
+
+## Python
+__pycache__
+.ruff_cache
+.venv
+
+## Rust
+target
+debug
+release
+*.rs.bk
+*.rlib
+*.prof*
+.idea/
+
 # System
 .DS_Store
 
-# Integrated development environment
-.idea
-.fleet
-.vscode
-
-# Package manager
-## Cargo
-target
-## mdBook
-book
-index.html
-
-# Test data
-nohup.out
-Cargo.toml.cargo-featalign.swap
+# General Ignores
+*.bak
+.env*
+*.log
+.env
+tmp

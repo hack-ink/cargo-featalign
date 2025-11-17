@@ -1,14 +1,25 @@
 [package]
-authors     = ["Xavier Lau <xavier@inv.cafe>"]
+authors     = ["Xavier Lau <x@acg.box>"]
 build       = "build.rs"
+categories  = ["command-line-utilities", "development-tools", "development-tools::cargo-plugins"]
 description = "Cargo features alignment tool."
-edition     = "2021"
+edition     = "2024"
 homepage    = "https://hack.ink/cargo-featalign"
+keywords    = ["cargo", "cli", "features", "lint", "workspace"]
 license     = "GPL-3.0"
 name        = "cargo-featalign"
 readme      = "README.md"
 repository  = "https://github.com/hack-ink/cargo-featalign"
-version     = "0.6.4"
+version     = "0.7.0"
+
+[package.metadata.binstall]
+bin-dir = "{ bin }{ binary-ext }"
+pkg-fmt = "zip"
+pkg-url = "{ repo }/releases/download/v{ version }/cargo-featalign-{ target }{ archive-suffix }"
+
+[package.metadata.binstall.overrides.x86_64-unknown-linux-gnu]
+pkg-fmt = "tgz"
+pkg-url = "{ repo }/releases/download/v{ version }/cargo-featalign-x86_64-unknown-linux-gnu.tar.gz"
 
 [profile.ci-dev]
 incremental = false

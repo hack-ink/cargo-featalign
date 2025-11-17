@@ -1,7 +1,7 @@
 // std
 use std::fs;
 // crates.io
-use toml_edit::{visit_mut::VisitMut, DocumentMut};
+use toml_edit::{DocumentMut, visit_mut::VisitMut};
 // cargo-featalign
 use crate::{
 	analyzer::Analyzer,
